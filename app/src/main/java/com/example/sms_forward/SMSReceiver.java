@@ -25,7 +25,7 @@ public class SMSReceiver extends BroadcastReceiver {
                 if (smsRule.shouldForward(messageBody)) {
                     EmailConfig config = new EmailConfig(context);
                     if (config.isConfigured()) {
-                        EmailSender sender = new EmailSender(
+                        EmailSender emailSender = new EmailSender(
                             config.getSmtpHost(),
                             config.getSmtpPort(),
                             config.getEmail(),
@@ -33,7 +33,7 @@ public class SMSReceiver extends BroadcastReceiver {
                         );
 
                         String subject = "新短信来自: " + sender;
-                        sender.sendEmail(subject, messageBody);
+                        emailSender.sendEmail(subject, messageBody);
                     }
                 }
             }

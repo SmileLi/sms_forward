@@ -7,23 +7,23 @@ import android.widget.ImageButton;
 import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
+import java.util.ArrayList;
 import java.util.List;
 
 public class RuleAdapter extends RecyclerView.Adapter<RuleAdapter.RuleViewHolder> {
-    private List<SMSRule.Rule> rules;
-    private final OnRuleDeleteListener deleteListener;
+    private List<SMSRule.Rule> rules = new ArrayList<>();
+    private final OnDeleteListener deleteListener;
 
-    public interface OnRuleDeleteListener {
+    public interface OnDeleteListener {
         void onDelete(int position);
     }
 
-    public RuleAdapter(List<SMSRule.Rule> rules, OnRuleDeleteListener deleteListener) {
-        this.rules = rules;
+    public RuleAdapter(OnDeleteListener deleteListener) {
         this.deleteListener = deleteListener;
     }
 
-    public void updateRules(List<SMSRule.Rule> newRules) {
-        this.rules = newRules;
+    public void setRules(List<SMSRule.Rule> rules) {
+        this.rules = rules;
         notifyDataSetChanged();
     }
 

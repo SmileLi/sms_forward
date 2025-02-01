@@ -20,38 +20,32 @@ jobs:
         distribution: 'temurin'
         cache: gradle
 
-    - name: Grant execute permission for gradlew
-      run: chmod +x gradlew
+    - name: Setup Gradle
+      uses: gradle/gradle-build-action@v2
+      with:
+        gradle-version: 7.5
+        cache-read-only: false
+        gradle-home-cache-cleanup: true
+
 
     - name: Build with Gradle
-      run: |
-        ./gradlew clean
-        ./gradlew tasks --group="build"
-        echo "=== Starting Debug Build ==="
-        ./gradlew assembleDebug --console=plain --info
+      run: gradle assembleDebug --stacktrace --info --console=plain
         
     - name: Debug Build Info
+      if: always()
       run: |
-        echo "=== Gradle Properties ==="
-        ./gradlew properties
-        echo "=== Gradle Home ==="
-        echo $GRADLE_HOME
-        echo "=== Android Home ==="
-        echo $ANDROID_HOME
         echo "=== Project Structure ==="
         ls -la
+        echo "=== Android SDK Info ==="
+        echo "ANDROID_HOME: $ANDROID_HOME"
         echo "=== Build Directory Content ==="
         ls -R app/build/ || true
-        echo "=== Gradle Files ==="
-        cat settings.gradle
-        cat app/build.gradle
         echo "=== Find APK ==="
         find . -type f -name "*.apk" 2>/dev/null || true
         
     - name: Upload APK
+      if: success()
       uses: actions/upload-artifact@v4
       with:
         name: app-debug
-        path: |
-          app/build/outputs/apk/debug/*.apk
-          build/outputs/apk/debug/*.apk
+        path: app/build/outputs/apk/debug/*.apk

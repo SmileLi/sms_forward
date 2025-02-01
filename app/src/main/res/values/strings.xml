@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">SMS Forward</string>
+    <string name="delete_rule">删除规则</string>
 </resources>
