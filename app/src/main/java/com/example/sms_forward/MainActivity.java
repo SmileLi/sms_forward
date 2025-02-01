@@ -8,14 +8,15 @@ import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.Switch;
 import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
+import androidx.recyclerview.widget.DividerItemDecoration;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+import com.google.android.material.switchmaterial.SwitchMaterial;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -25,7 +26,7 @@ public class MainActivity extends AppCompatActivity {
     private static final int PERMISSION_REQUEST_CODE = 123;
     private EditText etSmtpHost, etSmtpPort, etEmail, etPassword;
     private EditText etPattern;
-    private Switch swRegex;
+    private SwitchMaterial swRegex;
     private SMSRule smsRule;
     private EmailConfig emailConfig;
     private EditText etForwardPhone;
@@ -83,15 +84,23 @@ public class MainActivity extends AppCompatActivity {
             // 初始化规则列表
             rvRules = findViewById(R.id.rvRules);
             if (rvRules == null) throw new IllegalStateException("找不到规则列表视图");
-            rvRules.setLayoutManager(new LinearLayoutManager(this));
+            
+            // 设置布局管理器
+            LinearLayoutManager layoutManager = new LinearLayoutManager(this);
+            rvRules.setLayoutManager(layoutManager);
+            
+            // 添加分割线
+            DividerItemDecoration divider = new DividerItemDecoration(this, layoutManager.getOrientation());
+            rvRules.addItemDecoration(divider);
             
             // 初始化适配器
             ruleAdapter = new RuleAdapter(position -> {
                 try {
-                    List<SMSRule.Rule> rules = smsRule.getRules();
+                    List<SMSRule.Rule> rules = new ArrayList<>(smsRule.getRules());
                     rules.remove(position);
                     smsRule.saveRules(rules);
                     ruleAdapter.setRules(rules);
+                    Toast.makeText(this, "规则已删除", Toast.LENGTH_SHORT).show();
                 } catch (Exception e) {
                     e.printStackTrace();
                     Toast.makeText(this, "删除规则失败: " + e.getMessage(), Toast.LENGTH_SHORT).show();
@@ -141,20 +150,37 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void addRule() {
-        String pattern = etPattern.getText().toString().trim();
-        if (pattern.isEmpty()) {
-            Toast.makeText(this, "请输入匹配规则", Toast.LENGTH_SHORT).show();
-            return;
-        }
+        try {
+            String pattern = etPattern.getText().toString().trim();
+            if (pattern.isEmpty()) {
+                Toast.makeText(this, "请输入匹配规则", Toast.LENGTH_SHORT).show();
+                return;
+            }
 
-        List<SMSRule.Rule> rules = smsRule.getRules();
-        rules.add(new SMSRule.Rule(pattern, swRegex.isChecked()));
-        smsRule.saveRules(rules);
-        ruleAdapter.setRules(rules);
-        
-        // 清空输入
-        etPattern.setText("");
-        swRegex.setChecked(false);
+            // 获取当前规则列表
+            List<SMSRule.Rule> rules = new ArrayList<>(smsRule.getRules());
+            
+            // 添加新规则
+            SMSRule.Rule newRule = new SMSRule.Rule(pattern, swRegex.isChecked());
+            rules.add(newRule);
+            
+            // 保存规则
+            smsRule.saveRules(rules);
+            
+            // 更新显示
+            ruleAdapter.setRules(rules);
+            
+            // 清空输入
+            etPattern.setText("");
+            swRegex.setChecked(false);
+            
+            // 显示成功提示
+            Toast.makeText(this, "规则添加成功", Toast.LENGTH_SHORT).show();
+            
+        } catch (Exception e) {
+            e.printStackTrace();
+            Toast.makeText(this, "添加规则失败: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+        }
     }
 
     private void startForwardService() {
@@ -181,25 +207,63 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void setupTestButton() {
-        Button btnTest = findViewById(R.id.btnTest);
-        btnTest.setOnClickListener(v -> {
-            // 模拟接收短信
-            Intent intent = new Intent("android.provider.Telephony.SMS_RECEIVED");
+        try {
+            Button btnTest = findViewById(R.id.btnTest);
+            if (btnTest == null) return;
+            
+            btnTest.setOnClickListener(v -> sendTestSMS());
+        } catch (Exception e) {
+            e.printStackTrace();
+            Toast.makeText(this, "测试按钮初始化失败", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private void sendTestSMS() {
+        try {
+            // 创建测试短信内容
+            String sender = "+8613800138000";
+            String messageBody = "测试短信内容";
+            
+            // 创建 PDU 格式的短信
+            byte[] pduData = createPduData(sender, messageBody);
+            Object[] pdus = new Object[]{pduData};
+            
+            // 创建广播 Intent
+            Intent intent = new Intent();
+            intent.setAction("android.provider.Telephony.SMS_RECEIVED");
+            
+            // 添加短信数据
             Bundle bundle = new Bundle();
-            Object[] pdus = new Object[1];
-            byte[] pdu = createTestPdu();  // 创建测试短信的PDU
-            pdus[0] = pdu;
             bundle.putSerializable("pdus", pdus);
             bundle.putString("format", "3gpp");
             intent.putExtras(bundle);
-            sendBroadcast(intent);
-        });
+            
+            // 发送广播前检查权限
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECEIVE_SMS)
+                    == PackageManager.PERMISSION_GRANTED) {
+                // 发送广播
+                sendBroadcast(intent);
+                Toast.makeText(this, "已发送测试短信", Toast.LENGTH_SHORT).show();
+            } else {
+                Toast.makeText(this, "缺少接收短信权限", Toast.LENGTH_SHORT).show();
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            Toast.makeText(this, "发送测试短信失败: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+        }
     }
 
-    private byte[] createTestPdu() {
-        // 这里简化处理，实际PDU格式更复杂
-        String sender = "+8613800138000";
-        String message = "测试短信";
-        return (sender + "," + message).getBytes();
+    private byte[] createPduData(String sender, String message) {
+        try {
+            // 这里我们简单返回一个字符串的字节数组
+            // 实际的 PDU 格式更复杂，这里只是为了测试
+            String pdu = String.format("00%s00%s", 
+                sender.replace("+", ""),
+                message);
+            return pdu.getBytes();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return new byte[0];
+        }
     }
 }

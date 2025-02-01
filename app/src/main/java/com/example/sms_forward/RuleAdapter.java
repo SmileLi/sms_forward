@@ -23,7 +23,7 @@ public class RuleAdapter extends RecyclerView.Adapter<RuleAdapter.RuleViewHolder
     }
 
     public void setRules(List<SMSRule.Rule> rules) {
-        this.rules = rules;
+        this.rules = new ArrayList<>(rules);
         notifyDataSetChanged();
     }
 
@@ -40,11 +40,15 @@ public class RuleAdapter extends RecyclerView.Adapter<RuleAdapter.RuleViewHolder
         try {
             SMSRule.Rule rule = rules.get(position);
             if (rule != null) {
-                holder.tvPattern.setText(rule.getPattern());
-                holder.tvType.setText(rule.isRegex() ? "正则表达式" : "关键词");
+                String pattern = rule.getPattern();
+                holder.tvPattern.setText(pattern != null ? pattern : "");
+                
+                String type = rule.isRegex() ? "正则表达式" : "关键词";
+                holder.tvType.setText(type);
+                
                 holder.btnDelete.setOnClickListener(v -> {
                     if (deleteListener != null) {
-                        deleteListener.onDelete(position);
+                        deleteListener.onDelete(holder.getAdapterPosition());
                     }
                 });
             }
@@ -55,7 +59,7 @@ public class RuleAdapter extends RecyclerView.Adapter<RuleAdapter.RuleViewHolder
 
     @Override
     public int getItemCount() {
-        return rules.size();
+        return rules != null ? rules.size() : 0;
     }
 
     static class RuleViewHolder extends RecyclerView.ViewHolder {
