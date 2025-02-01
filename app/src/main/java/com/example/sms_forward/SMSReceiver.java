@@ -5,6 +5,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.provider.Telephony;
 import android.telephony.SmsMessage;
+import android.telephony.SmsManager;
 
 public class SMSReceiver extends BroadcastReceiver {
     @Override
@@ -21,20 +22,18 @@ public class SMSReceiver extends BroadcastReceiver {
 
                 String messageBody = fullMessage.toString();
                 SMSRule smsRule = new SMSRule(context);
+                PhoneConfig phoneConfig = new PhoneConfig(context);
 
-                if (smsRule.shouldForward(messageBody)) {
-                    EmailConfig config = new EmailConfig(context);
-                    if (config.isConfigured()) {
-                        EmailSender emailSender = new EmailSender(
-                            config.getSmtpHost(),
-                            config.getSmtpPort(),
-                            config.getEmail(),
-                            config.getPassword()
-                        );
-
-                        String subject = "新短信来自: " + sender;
-                        emailSender.sendEmail(subject, messageBody);
-                    }
+                if (smsRule.shouldForward(messageBody) && phoneConfig.isConfigured()) {
+                    // 发送短信
+                    SmsManager smsManager = SmsManager.getDefault();
+                    smsManager.sendTextMessage(
+                        phoneConfig.getForwardPhone(),
+                        null,
+                        "来自 " + sender + " 的短信：" + messageBody,
+                        null,
+                        null
+                    );
                 }
             }
         }
