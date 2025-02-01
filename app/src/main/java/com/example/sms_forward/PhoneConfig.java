@@ -14,7 +14,12 @@ public class PhoneConfig {
     }
 
     public void saveForwardPhone(String phone) {
-        preferences.edit().putString(KEY_FORWARD_PHONE, phone).apply();
+        if (phone == null || phone.trim().isEmpty()) {
+            throw new IllegalArgumentException("手机号不能为空");
+        }
+        preferences.edit()
+            .putString(KEY_FORWARD_PHONE, phone.trim())
+            .apply();
     }
 
     public String getForwardPhone() {
@@ -22,6 +27,11 @@ public class PhoneConfig {
     }
 
     public boolean isConfigured() {
-        return !getForwardPhone().isEmpty();
+        String phone = getForwardPhone();
+        return phone != null && !phone.trim().isEmpty() && phone.matches("^1\\d{10}$");
+    }
+
+    public void clear() {
+        preferences.edit().clear().apply();
     }
 } 

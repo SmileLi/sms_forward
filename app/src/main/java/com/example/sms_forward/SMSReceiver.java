@@ -45,8 +45,7 @@ public class SMSReceiver extends BroadcastReceiver {
                 }
                 
                 if (sender != null && fullMessage.length() > 0) {
-                    String messageBody = fullMessage.toString();
-                    processMessage(context, sender, messageBody);
+                    processMessage(context, sender, fullMessage.toString());
                 }
             }
         } catch (Exception e) {
@@ -54,7 +53,7 @@ public class SMSReceiver extends BroadcastReceiver {
         }
     }
 
-    private void processMessage(Context context, String sender, String messageBody) {
+    public void processMessage(Context context, String sender, String messageBody) {
         try {
             SMSRule smsRule = new SMSRule(context);
             PhoneConfig phoneConfig = new PhoneConfig(context);
@@ -76,7 +75,7 @@ public class SMSReceiver extends BroadcastReceiver {
                     );
                 }
                 
-                // 可以考虑添加发送成功的通知
+                // 显示通知
                 showNotification(context, "短信已转发", forwardMessage);
             }
         } catch (Exception e) {

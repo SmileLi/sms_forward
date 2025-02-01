@@ -39,7 +39,9 @@
                         android:id="@+id/etForwardPhone"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:inputType="phone" />
+                        android:inputType="phone"
+                        android:maxLength="11"
+                        android:digits="0123456789" />
                 </com.google.android.material.textfield.TextInputLayout>
 
                 <Button

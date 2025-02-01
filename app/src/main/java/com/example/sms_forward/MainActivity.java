@@ -140,13 +140,30 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void savePhoneConfig() {
-        String phone = etForwardPhone.getText().toString().trim();
-        if (phone.isEmpty()) {
-            Toast.makeText(this, "请输入转发手机号", Toast.LENGTH_SHORT).show();
-            return;
+        try {
+            String phone = etForwardPhone.getText().toString().trim();
+            if (phone.isEmpty()) {
+                Toast.makeText(this, R.string.input_phone_hint, Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            // 简单的手机号格式验证
+            if (!isValidPhoneNumber(phone)) {
+                Toast.makeText(this, "请输入有效的手机号", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            phoneConfig.saveForwardPhone(phone);
+            Toast.makeText(this, "手机号保存成功", Toast.LENGTH_SHORT).show();
+        } catch (Exception e) {
+            e.printStackTrace();
+            Toast.makeText(this, "保存失败: " + e.getMessage(), Toast.LENGTH_SHORT).show();
         }
-        phoneConfig.saveForwardPhone(phone);
-        Toast.makeText(this, "保存成功", Toast.LENGTH_SHORT).show();
+    }
+
+    private boolean isValidPhoneNumber(String phone) {
+        // 简单的手机号验证：1开头的11位数字
+        return phone.matches("^1\\d{10}$");
     }
 
     private void addRule() {
@@ -220,50 +237,28 @@ public class MainActivity extends AppCompatActivity {
 
     private void sendTestSMS() {
         try {
-            // 创建测试短信内容
-            String sender = "+8613800138000";
-            String messageBody = "测试短信内容";
-            
-            // 创建 PDU 格式的短信
-            byte[] pduData = createPduData(sender, messageBody);
-            Object[] pdus = new Object[]{pduData};
-            
-            // 创建广播 Intent
-            Intent intent = new Intent();
-            intent.setAction("android.provider.Telephony.SMS_RECEIVED");
-            
-            // 添加短信数据
-            Bundle bundle = new Bundle();
-            bundle.putSerializable("pdus", pdus);
-            bundle.putString("format", "3gpp");
-            intent.putExtras(bundle);
-            
-            // 发送广播前检查权限
-            if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECEIVE_SMS)
-                    == PackageManager.PERMISSION_GRANTED) {
-                // 发送广播
-                sendBroadcast(intent);
-                Toast.makeText(this, "已发送测试短信", Toast.LENGTH_SHORT).show();
-            } else {
-                Toast.makeText(this, "缺少接收短信权限", Toast.LENGTH_SHORT).show();
+            // 检查是否配置了转发手机号
+            if (!phoneConfig.isConfigured()) {
+                Toast.makeText(this, "请先配置转发手机号", Toast.LENGTH_SHORT).show();
+                return;
             }
+
+            // 创建测试短信内容
+            String sender = "10086";
+            String messageBody = "这是一条测试短信";
+
+            // 直接调用 SMSReceiver 处理
+            SMSReceiver receiver = new SMSReceiver();
+            receiver.processMessage(
+                this,
+                sender,
+                messageBody
+            );
+
+            Toast.makeText(this, "已发送测试短信", Toast.LENGTH_SHORT).show();
         } catch (Exception e) {
             e.printStackTrace();
             Toast.makeText(this, "发送测试短信失败: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-        }
-    }
-
-    private byte[] createPduData(String sender, String message) {
-        try {
-            // 这里我们简单返回一个字符串的字节数组
-            // 实际的 PDU 格式更复杂，这里只是为了测试
-            String pdu = String.format("00%s00%s", 
-                sender.replace("+", ""),
-                message);
-            return pdu.getBytes();
-        } catch (Exception e) {
-            e.printStackTrace();
-            return new byte[0];
         }
     }
 }
