@@ -37,10 +37,20 @@ public class RuleAdapter extends RecyclerView.Adapter<RuleAdapter.RuleViewHolder
 
     @Override
     public void onBindViewHolder(@NonNull RuleViewHolder holder, int position) {
-        SMSRule.Rule rule = rules.get(position);
-        holder.tvPattern.setText(rule.getPattern());
-        holder.tvType.setText(rule.isRegex() ? "正则表达式" : "关键词");
-        holder.btnDelete.setOnClickListener(v -> deleteListener.onDelete(position));
+        try {
+            SMSRule.Rule rule = rules.get(position);
+            if (rule != null) {
+                holder.tvPattern.setText(rule.getPattern());
+                holder.tvType.setText(rule.isRegex() ? "正则表达式" : "关键词");
+                holder.btnDelete.setOnClickListener(v -> {
+                    if (deleteListener != null) {
+                        deleteListener.onDelete(position);
+                    }
+                });
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     @Override

@@ -36,67 +36,98 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         
-        // 初始化配置
-        phoneConfig = new PhoneConfig(this);
-        smsRule = new SMSRule(this);
+        try {
+            // 初始化配置
+            phoneConfig = new PhoneConfig(this);
+            smsRule = new SMSRule(this);
 
-        // 初始化视图
-        initViews();
-        
-        // 加载已保存的配置
-        loadSavedConfig();
+            // 初始化视图
+            initViews();
+            
+            // 加载已保存的配置
+            loadSavedConfig();
 
-        // 请求权限
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECEIVE_SMS)
-                != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(this,
-                new String[]{
-                    Manifest.permission.RECEIVE_SMS,
-                    Manifest.permission.READ_SMS,
-                    Manifest.permission.SEND_SMS,
-                    Manifest.permission.FOREGROUND_SERVICE
-                },
-                PERMISSION_REQUEST_CODE);
-        } else {
-            startForwardService();
+            // 请求权限
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECEIVE_SMS)
+                    != PackageManager.PERMISSION_GRANTED) {
+                ActivityCompat.requestPermissions(this,
+                    new String[]{
+                        Manifest.permission.RECEIVE_SMS,
+                        Manifest.permission.READ_SMS,
+                        Manifest.permission.SEND_SMS,
+                        Manifest.permission.FOREGROUND_SERVICE
+                    },
+                    PERMISSION_REQUEST_CODE);
+            } else {
+                startForwardService();
+            }
+
+            setupTestButton();
+        } catch (Exception e) {
+            e.printStackTrace();
+            Toast.makeText(this, "初始化失败: " + e.getMessage(), Toast.LENGTH_LONG).show();
         }
-
-        setupTestButton();
     }
 
     private void initViews() {
-        // 初始化手机号输入框
-        etForwardPhone = findViewById(R.id.etForwardPhone);
-        
-        // 保存按钮点击事件
-        Button btnSavePhone = findViewById(R.id.btnSavePhone);
-        btnSavePhone.setOnClickListener(v -> savePhoneConfig());
+        try {
+            // 初始化手机号输入框
+            etForwardPhone = findViewById(R.id.etForwardPhone);
+            if (etForwardPhone == null) throw new IllegalStateException("找不到转发手机号输入框");
+            
+            // 保存按钮点击事件
+            Button btnSavePhone = findViewById(R.id.btnSavePhone);
+            if (btnSavePhone == null) throw new IllegalStateException("找不到保存按钮");
+            btnSavePhone.setOnClickListener(v -> savePhoneConfig());
 
-        // 初始化规则列表
-        rvRules = findViewById(R.id.rvRules);
-        rvRules.setLayoutManager(new LinearLayoutManager(this));
-        ruleAdapter = new RuleAdapter(position -> {
-            // 删除规则的处理
-            List<SMSRule.Rule> rules = smsRule.getRules();
-            rules.remove(position);
-            smsRule.saveRules(rules);
-            ruleAdapter.setRules(rules);
-        });
-        rvRules.setAdapter(ruleAdapter);
+            // 初始化规则列表
+            rvRules = findViewById(R.id.rvRules);
+            if (rvRules == null) throw new IllegalStateException("找不到规则列表视图");
+            rvRules.setLayoutManager(new LinearLayoutManager(this));
+            
+            // 初始化适配器
+            ruleAdapter = new RuleAdapter(position -> {
+                try {
+                    List<SMSRule.Rule> rules = smsRule.getRules();
+                    rules.remove(position);
+                    smsRule.saveRules(rules);
+                    ruleAdapter.setRules(rules);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    Toast.makeText(this, "删除规则失败: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                }
+            });
+            rvRules.setAdapter(ruleAdapter);
 
-        // 添加规则按钮点击事件
-        etPattern = findViewById(R.id.etPattern);
-        swRegex = findViewById(R.id.swRegex);
-        Button btnAddRule = findViewById(R.id.btnAddRule);
-        btnAddRule.setOnClickListener(v -> addRule());
+            // 添加规则相关控件
+            etPattern = findViewById(R.id.etPattern);
+            if (etPattern == null) throw new IllegalStateException("找不到规则输入框");
+            
+            swRegex = findViewById(R.id.swRegex);
+            if (swRegex == null) throw new IllegalStateException("找不到正则开关");
+            
+            Button btnAddRule = findViewById(R.id.btnAddRule);
+            if (btnAddRule == null) throw new IllegalStateException("找不到添加规则按钮");
+            btnAddRule.setOnClickListener(v -> addRule());
+        } catch (Exception e) {
+            e.printStackTrace();
+            Toast.makeText(this, "界面初始化失败: " + e.getMessage(), Toast.LENGTH_LONG).show();
+        }
     }
 
     private void loadSavedConfig() {
-        // 加载转发手机号
-        etForwardPhone.setText(phoneConfig.getForwardPhone());
-        
-        // 加载规则列表
-        ruleAdapter.setRules(smsRule.getRules());
+        try {
+            // 加载转发手机号
+            String savedPhone = phoneConfig.getForwardPhone();
+            etForwardPhone.setText(savedPhone);
+            
+            // 加载规则列表
+            List<SMSRule.Rule> rules = smsRule.getRules();
+            ruleAdapter.setRules(rules);
+        } catch (Exception e) {
+            e.printStackTrace();
+            Toast.makeText(this, "加载配置失败: " + e.getMessage(), Toast.LENGTH_LONG).show();
+        }
     }
 
     private void savePhoneConfig() {
