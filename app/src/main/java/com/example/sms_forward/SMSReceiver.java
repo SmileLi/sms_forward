@@ -126,7 +126,7 @@ public class SMSReceiver extends BroadcastReceiver {
 
             if (smsRule.shouldForward(messageBody) && phoneConfig.isConfigured()) {
                 SmsManager smsManager = SmsManager.getDefault();
-                String forwardMessage = String.format("来自 %s 的短信：%s", sender, messageBody);
+                String forwardMessage = String.format("%s转发:%s", sender, messageBody);
                 
                 ArrayList<String> parts = smsManager.divideMessage(forwardMessage);
                 for (String part : parts) {
