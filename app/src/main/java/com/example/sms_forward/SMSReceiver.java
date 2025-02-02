@@ -37,6 +37,12 @@ public class SMSReceiver extends BroadcastReceiver {
                         
                         if (sender == null) {
                             sender = message.getDisplayOriginatingAddress();
+                            String originatingAddress = message.getOriginatingAddress();
+                            
+                            showNotification(context, "短信号码信息",
+                                String.format("显示号码：%s\n原始号码：%s",
+                                    sender,
+                                    originatingAddress));
                         }
                         fullMessage.append(message.getMessageBody());
                     } catch (Exception e) {
@@ -58,12 +64,13 @@ public class SMSReceiver extends BroadcastReceiver {
             SMSRule smsRule = new SMSRule(context);
             PhoneConfig phoneConfig = new PhoneConfig(context);
 
+            showNotification(context, "收到短信", 
+                String.format("发送者：[%s]\n内容：%s", sender, messageBody));
+
             if (smsRule.shouldForward(messageBody) && phoneConfig.isConfigured()) {
-                // 发送短信
                 SmsManager smsManager = SmsManager.getDefault();
                 String forwardMessage = String.format("来自 %s 的短信：%s", sender, messageBody);
                 
-                // 处理长短信
                 ArrayList<String> parts = smsManager.divideMessage(forwardMessage);
                 for (String part : parts) {
                     smsManager.sendTextMessage(
@@ -75,7 +82,6 @@ public class SMSReceiver extends BroadcastReceiver {
                     );
                 }
                 
-                // 显示通知
                 showNotification(context, "短信已转发", forwardMessage);
             }
         } catch (Exception e) {

@@ -77,10 +77,18 @@ public class SMSRule {
         }
 
         public boolean matches(String message) {
-            if (isRegex) {
-                return message.matches(pattern);
-            } else {
-                return message.contains(pattern);
+            if (message == null || pattern == null) return false;
+            try {
+                if (isRegex) {
+                    return java.util.regex.Pattern.compile(pattern)
+                        .matcher(message)
+                        .find();
+                } else {
+                    return message.contains(pattern);
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+                return false;
             }
         }
     }
