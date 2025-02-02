@@ -17,45 +17,102 @@ public class SMSReceiver extends BroadcastReceiver {
     @Override
     public void onReceive(Context context, Intent intent) {
         try {
-            if (intent == null || intent.getAction() == null) return;
+            if (intent == null || intent.getAction() == null) {
+                showNotification(context, "接收异常", "intent 或 action 为空");
+                return;
+            }
             
+            // 记录接收到的广播类型
+            showNotification(context, "收到广播", 
+                String.format("Action: %s\n时间: %s", 
+                    intent.getAction(),
+                    new java.util.Date().toString()));
+
             if (intent.getAction().equals(Telephony.Sms.Intents.SMS_RECEIVED_ACTION)) {
                 Bundle bundle = intent.getExtras();
-                if (bundle == null) return;
+                if (bundle == null) {
+                    showNotification(context, "接收异常", "bundle 为空");
+                    return;
+                }
                 
                 Object[] pdus = (Object[]) bundle.get("pdus");
-                if (pdus == null || pdus.length == 0) return;
+                if (pdus == null || pdus.length == 0) {
+                    showNotification(context, "接收异常", "pdus 为空或长度为0");
+                    return;
+                }
                 
                 String format = bundle.getString("format", "3gpp");
                 StringBuilder fullMessage = new StringBuilder();
                 String sender = null;
                 
+                // 记录 PDU 数量
+                showNotification(context, "PDU信息", 
+                    String.format("PDU数量: %d\n格式: %s", 
+                        pdus.length, format));
+                
                 for (Object pdu : pdus) {
                     try {
                         SmsMessage message = SmsMessage.createFromPdu((byte[]) pdu, format);
-                        if (message == null) continue;
+                        if (message == null) {
+                            showNotification(context, "PDU解析失败", "message 为空");
+                            continue;
+                        }
                         
                         if (sender == null) {
                             sender = message.getDisplayOriginatingAddress();
                             String originatingAddress = message.getOriginatingAddress();
                             
-                            showNotification(context, "短信号码信息",
-                                String.format("显示号码：%s\n原始号码：%s",
+                            // 记录更详细的短信信息
+                            showNotification(context, "短信详细信息",
+                                String.format("显示号码: %s\n" +
+                                    "原始号码: %s\n" +
+                                    "消息类型: %s\n" +
+                                    "时间戳: %s\n" +
+                                    "协议标识: %d\n" +
+                                    "编码方案: %d\n" +
+                                    "服务中心: %s",
                                     sender,
-                                    originatingAddress));
+                                    originatingAddress,
+                                    message.getMessageClass(),
+                                    new java.util.Date(message.getTimestampMillis()),
+                                    message.getProtocolIdentifier(),
+                                    message.getStatusOnIcc(),
+                                    message.getServiceCenterAddress()));
                         }
-                        fullMessage.append(message.getMessageBody());
+                        
+                        String messageBody = message.getMessageBody();
+                        fullMessage.append(messageBody);
+                        
+                        // 记录每个 PDU 的内容
+                        showNotification(context, "PDU内容", 
+                            String.format("PDU序号: %d\n内容: %s", 
+                                fullMessage.length(), messageBody));
+                        
                     } catch (Exception e) {
                         e.printStackTrace();
+                        showNotification(context, "PDU处理异常", e.getMessage());
                     }
                 }
                 
                 if (sender != null && fullMessage.length() > 0) {
+                    // 记录最终组装的短信内容
+                    showNotification(context, "完整短信", 
+                        String.format("发送者: %s\n内容: %s\n长度: %d", 
+                            sender, 
+                            fullMessage.toString(),
+                            fullMessage.length()));
+                            
                     processMessage(context, sender, fullMessage.toString());
+                } else {
+                    showNotification(context, "处理失败", 
+                        String.format("sender: %s, message length: %d", 
+                            sender, 
+                            fullMessage.length()));
                 }
             }
         } catch (Exception e) {
             e.printStackTrace();
+            showNotification(context, "广播接收异常", e.getMessage());
         }
     }
 
